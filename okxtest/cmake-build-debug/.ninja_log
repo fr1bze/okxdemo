@@ -1,0 +1,6 @@
+# ninja log v5
+9	2144	1712564807141194239	CMakeFiles/okxtest.dir/src/OKXConnector.cpp.o	3c55f473f2c020d6
+3405	3735	1712564808745372870	okxtest	6d06a0f9e0b3b279
+0	3403	1712564808372775660	CMakeFiles/okxtest.dir/main.cpp.o	81bab7fb736151db
+6	1973	1712566875854200750	CMakeFiles/okxtest.dir/main.cpp.o	92573badff0494a4
+7	3299	1712566877178104121	CMakeFiles/okxtest.dir/src/OKXConnector.cpp.o	4a646c923d7b4f02
