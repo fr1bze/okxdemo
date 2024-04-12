@@ -19,22 +19,23 @@ async def parser(ws):
 
 async def connect_and_subscribe(url, subs):
     async with websockets.connect(url, ping_interval=20, ping_timeout=60) as ws:
-        print("Connected " + datetime.datetime.now().isoformat())
-        await ws.send(json.dumps(subs))
+        print(f"Connected {datetime.datetime.now().isoformat()} to {subs['instId']}")
+        await ws.send(json.dumps({'op': 'subscribe', 'args': [subs]}))
         await parser(ws)
-    print("Disconnected " + datetime.datetime.now().isoformat())
+    print(f"Disconnected {datetime.datetime.now().isoformat()} from {subs['instId']}")
 
 
 async def make_ws_connections():
     url = 'wss://ws.okx.com:8443/ws/v5/public'
-    subs = {
-        'op': 'subscribe',
-        'args': [
-            {'channel': 'mark-price', 'instId': 'BTC-USDT'},
-            {'channel': 'mark-price', 'instId': 'ETH-USDT-SWAP'},
-        ]
-    }
-    tasks = [connect_and_subscribe(url, subs) for _ in range(10)]
+    subscriptions = [
+        {'channel': 'mark-price', 'instId': 'BTC-USDT'},
+        {'channel': 'mark-price', 'instId': 'ETH-USDT-SWAP'},
+    ]
+    tasks = []
+    for subs in subscriptions:
+        for _ in range(10):
+            tasks.append(connect_and_subscribe(url, subs))
+            await asyncio.sleep(0.01)
     await asyncio.gather(*tasks)
 
 

@@ -3,6 +3,7 @@
 template <typename T>
 ComplexCalculator<T>::ComplexCalculator(std::vector<CalcType> types) {
     this->m_types = types;
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     std::cout << "Calculation object has been created!" << std::endl;
 }
 

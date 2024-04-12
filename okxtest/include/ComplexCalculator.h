@@ -5,6 +5,8 @@
 #include <iostream>
 #include <vector>
 #include <functional>
+#include <thread>
+#include <chrono>
 
 enum class CalcType {
     GAUSS,

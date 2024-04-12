@@ -1,63 +1,48 @@
-#include <iostream>
 #include "OKXConnector.h"
 #include "ComplexCalculator.h"
-#include <cmath>
-#include <future>
 #include <thread>
-
-using namespace OKXConnection;
+#include <cmath>
 
 double cosine_function(double x) {
     return std::cos(0.5 * x);
-};
+}
+
 
 int main() {
-    std::string uri = "wss://ws.okx.com:8443/ws/v5/public";
+    OKXConnection::OKXConnector connector;
     std::vector<CalcType> types = {CalcType::INTEGRATION, CalcType::GAUSS, CalcType::TRANSPOSITION};
-    std::vector<std::vector<double>> matrix = {
-            {1,2,3},
-            {4,5,6},
-            {7,8,9}
-    };
-    auto* complexCalc = new ComplexCalculator<double>(types);
-    complexCalc->setMatrix(matrix);
-    std::vector<std::vector<double>> A = {
-            {2.0, 1.0, -1.0},
-            {-3.0, -1.0, 2.0},
-            {-2.0, 1.0, 2.0}
-    };
+    double a = 0;
+    double b = M_PI * static_cast<double>(3.0 / 2);
     std::vector<std::vector<double>> B = {
             {8.0},
             {-11.0},
             {-3.0}
     };
-    Result<double> results;
-    double a = 0;
-    double b = M_PI;
+    std::vector<std::vector<double>> A = { {1,2,3},
+                                           {4,5,6},
+                                           {7,8,9}
+                                           };
 
-    std::future<Result<double>> calculation_result = std::async(std::launch::async, [=]() {
-        return complexCalc->calculate(A, B, a, b, cosine_function);
+    std::thread connectorThread([&]() {
+        std::string uri = "wss://ws.okx.com:8443/ws/v5/public";
+        connector.connect(uri);
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        for (int i = 0; i < 10; ++i) {
+            connector.send_message("My message");
+        }
     });
+    std::thread thread([&]() {
+        ComplexCalculator<double> complexCalc(types);
+        complexCalc.calculate(A, B, a, b, cosine_function);
 
-
-    std::vector<std::future<void>> websocket_futures;
-
-    websocket_futures.reserve(10);
+    });
+    std::this_thread::sleep_for(std::chrono::seconds(5));
     for (int i = 0; i < 10; ++i) {
-        websocket_futures[i] = (std::async(std::launch::async, [=]() {
-            OKXConnector connector;
-            connector.connect(uri);
-            connector.send_message("Hello, WebSocket!");
-            std::this_thread::sleep_for(std::chrono::seconds(5));
-            connector.disconnect();
-        }));
+        connector.send_message("My message");
     }
-
-    for (auto& future : websocket_futures) {
-        future.wait();
-    }
-
-    Result<double> results_values = calculation_result.get();
-
+    connectorThread.join();
+    thread.join();
+    connector.send_message("Hello, world");
+    connector.disconnect();
     return 0;
 }
