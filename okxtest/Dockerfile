@@ -1,30 +1,38 @@
-FROM ubuntu
+FROM ubuntu:18.04
 
-COPY install_tools.sh .
-RUN chmod +x install_tools.sh
-RUN ./install_tools.sh
+RUN apt-get update && \
+    apt-get install -y \
+    git \
+    wget \
+    make \
+    gcc \
+    perl \
+    build-essential \
+    libwebsocketpp-dev \
+    nlohmann-json-dev \
+    libfindbin-libs-perl
 
-ARG username=user
-ARG home_dir=/home/${username}
+RUN wget https://www.openssl.org/source/openssl-1.1.1l.tar.gz && \
+    tar -xzvf openssl-1.1.1l.tar.gz && \
+    cd openssl-1.1.1l && \
+    ./config && \
+    make && \
+    make install && \
+    ldconfig && \
+    cd .. && \
+    rm -rf openssl-1.1.1l.tar.gz openssl-1.1.1l
 
-RUN mkdir test
-COPY *.sh test/
+RUN wget https://boostorg.jfrog.io/artifactory/main/release/1.68.0/source/boost_1_68_0.tar.gz
+RUN tar -xvzf boost_1_68_0.tar.gz
+WORKDIR /boost_1_68_0
+RUN ./bootstrap.sh
+RUN ./b2 install
 
-COPY installboost.sh /test/
-RUN chmod +x /test/installboost.sh
-RUN /test/installboost.sh
 
-RUN chmod +x test/installwebsocket.sh
-RUN test/installwebsocket.sh 0.8.1
+WORKDIR /app
+COPY okxtest_client.cpp .
 
-COPY src ${home_dir}/src
-COPY include ${home_dir}/include
-COPY main.cpp ${home_dir}
-COPY CMakeLists.txt ${home_dir}
-
-RUN mkdir ${home_dir}/build
-WORKDIR ${home_dir}/build
-RUN cmake .. && cat ${home_dir}/build/CMakeFiles/CMakeOutput.log
-RUN cmake --build build
+# Compile your code with the necessary includes and linking
+RUN g++ -std=c++11 -o okxtest okxtest_client.cpp -I/usr/local/include/websocketpp -pthread -DBOOST_ERROR_CODE_HEADER_ONLY -L/usr/local/lib -lssl -lcrypto -lboost_system -lboost_thread
 
 CMD ["./okxtest"]

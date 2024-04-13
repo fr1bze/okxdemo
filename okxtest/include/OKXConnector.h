@@ -1,29 +1,43 @@
 #include <iostream>
+#include <string>
+#include <vector>
+#include <memory>
+#include <boost/asio/ssl.hpp>
+#include <websocketpp/common/thread.hpp>
 #include <websocketpp/config/asio_client.hpp>
 #include <websocketpp/client.hpp>
-#include <websocketpp/common/thread.hpp>
-#include <websocketpp/common/memory.hpp>
-#include <thread>
-#include <mutex>
-//#include <nlohmann/json.hpp>
-typedef websocketpp::client<websocketpp::config::asio_tls_client> client_t;
+#include <nlohmann/json.hpp>
 
-namespace OKXConnection {
+using json = nlohmann::json;
+using websocketpp::lib::placeholders::_1;
+using websocketpp::lib::placeholders::_2;
+using websocketpp::lib::bind;
 
-    class OKXConnector {
-    public:
-        OKXConnector();
-        void connect(const std::string uri);
-        void disconnect();
-        void send_message(const std::string& message);
-        std::thread& getClientThread();
-        bool stop_client_thread = false;
-    private:
-        client_t client;
-        websocketpp::connection_hdl connection;
-        std::thread client_thread;
-        std::mutex mutex_;
-        websocketpp::lib::shared_ptr<boost::asio::ssl::context> on_tls_init(const std::string& uri, websocketpp::connection_hdl);
-        void on_message(websocketpp::connection_hdl hdl, client_t::message_ptr msg);
-    };
-}
+typedef websocketpp::client<websocketpp::config::asio_tls_client> client;
+typedef websocketpp::config::asio_client::message_type::ptr message_ptr;
+typedef std::shared_ptr<boost::asio::ssl::context> context_ptr;
+
+class OKXConnector {
+public:
+    OKXConnector();
+    void connect();
+    void disconnect();
+    ~OKXConnector() = default;
+    OKXConnector(const OKXConnector& other) {
+        this->m_con = other.m_con;
+    }
+
+    OKXConnector& operator=(const OKXConnector& other) {
+        if (this != &other) {
+            this->m_con = other.m_con;
+        }
+        return *this;
+    }
+
+private:
+    client m_client;
+    websocketpp::connection_hdl m_con;
+    static context_ptr on_tls_init();
+    static void on_open(client* c, websocketpp::connection_hdl hdl);
+    void on_message(websocketpp::connection_hdl hdl, message_ptr msg);
+};
